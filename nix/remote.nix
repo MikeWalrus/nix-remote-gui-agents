@@ -23,7 +23,7 @@ let
       <keyboard>
         <keybind key="C-A-g">
           <action name="Execute">
-            <command>chatgpt --ozone-platform=wayland --enable-features=UseOzonePlatform --password-store=basic</command>
+            <command>chatgpt --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --password-store=basic</command>
           </action>
         </keybind>
       </keyboard>
@@ -125,17 +125,24 @@ writeShellApplication {
       chatgpt \
         --ozone-platform=wayland \
         --enable-features=UseOzonePlatform \
+        --disable-gpu \
         --password-store=basic \
         ${lib.escapeShellArgs extraArgs} &
       app_pid="$!"
     }
     launch_chatgpt
+    restart_count=0
 
     echo "ChatGPT is available via VNC at ${listenAddress}:${toString port}" >&2
     wayvnc --config="$wayvnc_config" --output=HEADLESS-1 &
     server_pid="$!"
     while kill -0 "$server_pid" 2>/dev/null; do
       if ! kill -0 "$app_pid" 2>/dev/null; then
+        restart_count=$((restart_count + 1))
+        if test "$restart_count" -ge 4; then
+          echo "ChatGPT crashed repeatedly; stopping after 4 launches" >&2
+          exit 1
+        fi
         echo "ChatGPT exited; restarting it" >&2
         sleep 1
         launch_chatgpt
