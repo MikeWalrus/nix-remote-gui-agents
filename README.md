@@ -24,6 +24,8 @@ ssh -N -L 5900:127.0.0.1:5900 your-user@your-nixos-host
 Point a VNC viewer at `128.105.102.153:5900` and enter the same username and
 password. This runs as your current user, stores normal app state in your home
 directory, and needs no rebuild, root access, or NixOS configuration change.
+If you close the ChatGPT window, the launcher automatically starts it again;
+stop the launcher with `Ctrl-C`.
 
 The server uses WayVNC authentication plus a locally generated TLS certificate.
 Because this is a public address, allow TCP/5900 only from trusted source IPs in

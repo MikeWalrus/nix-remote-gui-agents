@@ -114,19 +114,27 @@ writeShellApplication {
 
     wlr-randr --output HEADLESS-1 --custom-mode ${toString width}x${toString height}@${toString refresh}Hz
 
-    chatgpt \
-      --ozone-platform=wayland \
-      --enable-features=UseOzonePlatform \
-      --password-store=basic \
-      ${lib.escapeShellArgs extraArgs} &
-    app_pid="$!"
+    launch_chatgpt() {
+      chatgpt \
+        --ozone-platform=wayland \
+        --enable-features=UseOzonePlatform \
+        --password-store=basic \
+        ${lib.escapeShellArgs extraArgs} &
+      app_pid="$!"
+    }
+    launch_chatgpt
 
     echo "ChatGPT is available via VNC at ${listenAddress}:${toString port}" >&2
     wayvnc --config="$wayvnc_config" --output=HEADLESS-1 &
     server_pid="$!"
-    # Closing ChatGPT should end the remote session instead of leaving a
-    # connected VNC client looking at an empty compositor.
-    wait -n "$server_pid" "$app_pid"
+    while kill -0 "$server_pid" 2>/dev/null; do
+      if ! kill -0 "$app_pid" 2>/dev/null; then
+        echo "ChatGPT exited; restarting it" >&2
+        sleep 1
+        launch_chatgpt
+      fi
+      sleep 1
+    done
   '';
 
   meta = {
