@@ -124,7 +124,9 @@ writeShellApplication {
     echo "ChatGPT is available via VNC at ${listenAddress}:${toString port}" >&2
     wayvnc --config="$wayvnc_config" --output=HEADLESS-1 &
     server_pid="$!"
-    wait "$server_pid"
+    # Closing ChatGPT should end the remote session instead of leaving a
+    # connected VNC client looking at an empty compositor.
+    wait -n "$server_pid" "$app_pid"
   '';
 
   meta = {
