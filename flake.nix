@@ -1,10 +1,17 @@
 {
   description = "ChatGPT Desktop in a headless, SSH-tunnelled VNC session";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    codex-desktop-linux.url = "github:ilysenko/codex-desktop-linux";
+  };
 
   outputs =
-    { self, nixpkgs }:
+    {
+      self,
+      nixpkgs,
+      codex-desktop-linux,
+    }:
     let
       supportedSystems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -19,9 +26,10 @@
           };
         in
         rec {
-          chatgpt-desktop = pkgs.callPackage ./nix/package.nix { };
+          chatgpt-desktop = codex-desktop-linux.packages.${system}.codex-desktop;
           chatgpt-remote = pkgs.callPackage ./nix/remote.nix {
             chatgpt = chatgpt-desktop;
+            desktopCommand = "codex-desktop";
             listenAddress = "128.105.102.153";
           };
           default = chatgpt-remote;

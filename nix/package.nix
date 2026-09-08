@@ -99,14 +99,6 @@ stdenv.mkDerivation (finalAttrs: {
     mkdir -p "$out"
     cp -r usr/* "$out/"
 
-    # Electron enables a Linux-only FD ownership assertion.  In the upstream
-    # Linux preview it is tripped by the network-service process on NixOS,
-    # turning a recoverable double-close into an immediate SIGILL/SIGTRAP.
-    # This is the entry of CrashOnFdOwnershipViolation() for this exact
-    # upstream binary (verified from its unique diagnostic string).  Make the
-    # diagnostic routine a no-op, matching Electron builds with the assertion
-    # disabled.  Keep the version and offset coupled above when updating src.
-    printf '\303' | dd of="$out/lib/chatgpt/ChatGPT" bs=1 seek=$((0xcc448f0)) conv=notrunc status=none
     runHook postInstall
   '';
 

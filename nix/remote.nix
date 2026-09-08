@@ -8,6 +8,7 @@
   wayvnc,
   wlr-randr,
   chatgpt,
+  desktopCommand ? "chatgpt",
   listenAddress ? "127.0.0.1",
   port ? 5900,
   width ? 1920,
@@ -23,7 +24,7 @@ let
       <keyboard>
         <keybind key="C-A-g">
           <action name="Execute">
-            <command>chatgpt --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --disable-crashpad-for-testing --password-store=basic</command>
+            <command>${desktopCommand} --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --password-store=basic</command>
           </action>
         </keybind>
       </keyboard>
@@ -95,6 +96,7 @@ writeShellApplication {
     export WLR_LIBINPUT_NO_DEVICES=1
     export WLR_RENDERER=pixman
     export WAYLAND_DISPLAY=wayland-0
+    export NIXOS_OZONE_WL=1
 
     labwc --config-dir "$config_dir" &
     compositor_pid="$!"
@@ -122,11 +124,10 @@ writeShellApplication {
     wlr-randr --output HEADLESS-1 --custom-mode ${toString width}x${toString height}@${toString refresh}Hz
 
     launch_chatgpt() {
-      chatgpt \
+      ${desktopCommand} \
         --ozone-platform=wayland \
         --enable-features=UseOzonePlatform \
         --disable-gpu \
-        --disable-crashpad-for-testing \
         --password-store=basic \
         ${lib.escapeShellArgs extraArgs} &
       app_pid="$!"

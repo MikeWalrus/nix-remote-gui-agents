@@ -1,11 +1,13 @@
 # ChatGPT Desktop, remotely on NixOS
 
-This flake packages OpenAI's official Linux preview and provides a NixOS module
-that runs it in a dedicated headless Wayland session. The launcher binds the
-configured address and protects the VNC session with WayVNC authentication.
+This flake uses the NixOS-aware `codex-desktop-linux` distribution and provides
+a headless Wayland session for remote access. The launcher binds the configured
+address and protects the VNC session with WayVNC authentication.
 
-The upstream package currently supports Ubuntu, Debian, and Fedora—not NixOS.
-This packaging is therefore best-effort and pins the exact upstream download.
+`codex-desktop-linux` verifies and repackages OpenAI's signed Linux payload,
+then supplies the NixOS runtime and Bubblewrap integration. It shares the
+upstream `Codex` profile with the official ChatGPT app, so do not run both at
+the same time.
 
 ## Run without changing the host configuration
 
@@ -34,9 +36,8 @@ Because this is a public address, allow TCP/5900 only from trusted source IPs in
 your firewall/security group. The password is read from the environment and is
 never stored in the flake.
 
-The launcher disables Electron's Crashpad reporter because the Linux preview's
-Crashpad/Node failure path produced repeated `SIGILL` traps under this NixOS
-runtime. A 45-second run with the workaround produced no `SIGILL`.
+The desktop runtime is supplied by the pinned `codex-desktop-linux` flake input;
+update that input normally with `nix flake update codex-desktop-linux`.
 
 ## Optional: start automatically at boot
 
