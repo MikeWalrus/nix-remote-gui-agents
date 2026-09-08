@@ -20,6 +20,13 @@ let
   rcXml = builtins.toFile "chatgpt-remote-rc.xml" ''
     <?xml version="1.0"?>
     <labwc_config>
+      <keyboard>
+        <keybind key="C-A-g">
+          <action name="Execute">
+            <command>chatgpt --ozone-platform=wayland --enable-features=UseOzonePlatform --password-store=basic</command>
+          </action>
+        </keybind>
+      </keyboard>
       <windowRules>
         <windowRule identifier="*">
           <action name="Maximize" />
