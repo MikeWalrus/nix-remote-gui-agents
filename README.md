@@ -34,6 +34,10 @@ Because this is a public address, allow TCP/5900 only from trusted source IPs in
 your firewall/security group. The password is read from the environment and is
 never stored in the flake.
 
+The launcher disables Electron's Crashpad reporter because the Linux preview's
+Crashpad/Node failure path produced repeated `SIGILL` traps under this NixOS
+runtime. A 45-second run with the workaround produced no `SIGILL`.
+
 ## Optional: start automatically at boot
 
 ```nix

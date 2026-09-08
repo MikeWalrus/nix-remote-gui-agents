@@ -23,7 +23,7 @@ let
       <keyboard>
         <keybind key="C-A-g">
           <action name="Execute">
-            <command>chatgpt --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --password-store=basic</command>
+            <command>chatgpt --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --disable-crashpad-for-testing --password-store=basic</command>
           </action>
         </keybind>
       </keyboard>
@@ -126,6 +126,7 @@ writeShellApplication {
         --ozone-platform=wayland \
         --enable-features=UseOzonePlatform \
         --disable-gpu \
+        --disable-crashpad-for-testing \
         --password-store=basic \
         ${lib.escapeShellArgs extraArgs} &
       app_pid="$!"
