@@ -25,21 +25,22 @@ let
     builtins.toJSON {
       layer = "top";
       position = "top";
-      height = 30;
+      height = 36;
       "modules-right" = [ "tray" ];
       tray = {
-        icon-size = 20;
-        spacing = 8;
+        icon-size = 26;
+        spacing = 12;
       };
     }
   );
   waybarStyle = builtins.toFile "chatgpt-remote-waybar.css" ''
     window#waybar {
-      background: #1e1e2e;
-      color: #cdd6f4;
+      background: #f8fafc;
+      color: #0f172a;
+      border-bottom: 1px solid #cbd5e1;
     }
     #tray {
-      padding: 0 10px;
+      padding: 0 14px;
     }
   '';
   rcXml = builtins.toFile "chatgpt-remote-rc.xml" ''
