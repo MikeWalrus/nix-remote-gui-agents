@@ -1,8 +1,10 @@
 # ChatGPT Desktop, remotely on NixOS
 
-This flake uses the NixOS-aware `codex-desktop-linux` distribution and provides
-a headless Wayland session for remote access. The launcher binds the configured
-address and protects the VNC session with WayVNC authentication.
+This flake uses the NixOS-aware `codex-desktop-linux` and
+`claude-desktop-debian` distributions and provides a headless Wayland session
+for remote access. The launcher starts both ChatGPT/Codex and Claude Desktop,
+binds the configured address, and protects the VNC session with WayVNC
+authentication.
 
 `codex-desktop-linux` verifies and repackages OpenAI's signed Linux payload,
 then supplies the NixOS runtime and Bubblewrap integration. It shares the
@@ -28,8 +30,9 @@ password. This runs as your current user, stores normal app state in your home
 directory, and needs no rebuild, root access, or NixOS configuration change.
 If you close the ChatGPT window, ChatGPT normally stays in the background. Press
 `Ctrl+Alt+G` in the VNC session to invoke it again and reopen the hidden window.
-If the process actually exits, the launcher restarts it. Stop the launcher with
-`Ctrl-C`.
+Press `Ctrl+Alt+C` to reopen Claude Desktop. Use `Alt+Tab` to switch between the
+two windows. If either process actually exits, the launcher restarts it. Stop
+the launcher with `Ctrl-C`.
 
 The server uses WayVNC authentication plus a locally generated TLS certificate.
 Because this is a public address, allow TCP/5900 only from trusted source IPs in

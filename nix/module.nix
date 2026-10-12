@@ -1,4 +1,8 @@
 {
+  codex-desktop-linux,
+  claude-desktop-linux,
+}:
+{
   config,
   lib,
   pkgs,
@@ -7,9 +11,13 @@
 
 let
   cfg = config.services.chatgpt-remote;
-  chatgpt = pkgs.callPackage ./package.nix { };
+  system = pkgs.stdenv.hostPlatform.system;
+  chatgpt = codex-desktop-linux.packages.${system}.codex-desktop;
+  claudeDesktop = claude-desktop-linux.packages.${system}.claude-desktop;
   start = pkgs.callPackage ./remote.nix {
-    inherit chatgpt;
+    inherit chatgpt claudeDesktop;
+    desktopCommand = "codex-desktop";
+    claudeCommand = "claude-desktop";
     inherit (cfg)
       listenAddress
       port
@@ -22,12 +30,12 @@ let
 in
 {
   options.services.chatgpt-remote = {
-    enable = lib.mkEnableOption "a headless ChatGPT Desktop session reachable over VNC";
+    enable = lib.mkEnableOption "a headless ChatGPT/Codex and Claude Desktop session reachable over VNC";
 
     user = lib.mkOption {
       type = lib.types.str;
       default = "chatgpt-remote";
-      description = "Unprivileged system user that owns the ChatGPT session.";
+      description = "Unprivileged system user that owns the desktop session.";
     };
 
     listenAddress = lib.mkOption {
@@ -74,13 +82,11 @@ in
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Additional command-line arguments passed to ChatGPT Desktop.";
+      description = "Additional command-line arguments passed to ChatGPT/Codex.";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    nixpkgs.config.allowUnfreePredicate = pkg: lib.getName pkg == "chatgpt-desktop";
-
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.user;
@@ -90,7 +96,7 @@ in
     users.groups.${cfg.user} = { };
 
     systemd.services.chatgpt-remote = {
-      description = "Headless ChatGPT Desktop VNC session";
+      description = "Headless ChatGPT/Codex and Claude Desktop VNC session";
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];

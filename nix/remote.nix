@@ -8,7 +8,9 @@
   wayvnc,
   wlr-randr,
   chatgpt,
+  claudeDesktop,
   desktopCommand ? "chatgpt",
+  claudeCommand ? "claude-desktop",
   listenAddress ? "127.0.0.1",
   port ? 5900,
   width ? 1920,
@@ -27,6 +29,11 @@ let
             <command>${desktopCommand} --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --password-store=basic</command>
           </action>
         </keybind>
+        <keybind key="C-A-c">
+          <action name="Execute">
+            <command>env CLAUDE_USE_WAYLAND=1 ${claudeCommand} --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu</command>
+          </action>
+        </keybind>
       </keyboard>
       <windowRules>
         <windowRule identifier="*">
@@ -40,6 +47,7 @@ writeShellApplication {
   name = "chatgpt-remote";
   runtimeInputs = [
     chatgpt
+    claudeDesktop
     coreutils
     dbus
     labwc
@@ -100,11 +108,13 @@ writeShellApplication {
 
     labwc --config-dir "$config_dir" &
     compositor_pid="$!"
-    app_pid=""
+    chatgpt_pid=""
+    claude_pid=""
     server_pid=""
     cleanup() {
       test -z "$server_pid" || kill "$server_pid" 2>/dev/null || true
-      test -z "$app_pid" || kill "$app_pid" 2>/dev/null || true
+      test -z "$chatgpt_pid" || kill "$chatgpt_pid" 2>/dev/null || true
+      test -z "$claude_pid" || kill "$claude_pid" 2>/dev/null || true
       kill "$compositor_pid" 2>/dev/null || true
     }
     trap cleanup EXIT INT TERM
@@ -130,31 +140,52 @@ writeShellApplication {
         --disable-gpu \
         --password-store=basic \
         ${lib.escapeShellArgs extraArgs} &
-      app_pid="$!"
+      chatgpt_pid="$!"
+    }
+    launch_claude() {
+      CLAUDE_USE_WAYLAND=1 ${claudeCommand} \
+        --ozone-platform=wayland \
+        --enable-features=UseOzonePlatform \
+        --disable-gpu &
+      claude_pid="$!"
     }
     launch_chatgpt
-    restart_count=0
+    launch_claude
+    chatgpt_restart_count=0
+    claude_restart_count=0
 
     echo "ChatGPT is available via VNC at ${listenAddress}:${toString port}" >&2
     wayvnc --config="$wayvnc_config" --output=HEADLESS-1 &
     server_pid="$!"
     while kill -0 "$server_pid" 2>/dev/null; do
-      if ! kill -0 "$app_pid" 2>/dev/null; then
-        restart_count=$((restart_count + 1))
-        if test "$restart_count" -ge 4; then
-          echo "ChatGPT crashed repeatedly; stopping after 4 launches" >&2
-          exit 1
+      if test -n "$chatgpt_pid" && ! kill -0 "$chatgpt_pid" 2>/dev/null; then
+        chatgpt_restart_count=$((chatgpt_restart_count + 1))
+        if test "$chatgpt_restart_count" -lt 4; then
+          echo "ChatGPT exited; restarting it" >&2
+          sleep 1
+          launch_chatgpt
+        else
+          echo "ChatGPT crashed repeatedly; leaving the VNC session running" >&2
+          chatgpt_pid=""
         fi
-        echo "ChatGPT exited; restarting it" >&2
-        sleep 1
-        launch_chatgpt
+      fi
+      if test -n "$claude_pid" && ! kill -0 "$claude_pid" 2>/dev/null; then
+        claude_restart_count=$((claude_restart_count + 1))
+        if test "$claude_restart_count" -lt 4; then
+          echo "Claude Desktop exited; restarting it" >&2
+          sleep 1
+          launch_claude
+        else
+          echo "Claude Desktop crashed repeatedly; leaving the VNC session running" >&2
+          claude_pid=""
+        fi
       fi
       sleep 1
     done
   '';
 
   meta = {
-    description = "Run ChatGPT Desktop in a rootless headless VNC session";
+    description = "Run ChatGPT/Codex and Claude Desktop in a rootless headless VNC session";
     mainProgram = "chatgpt-remote";
   };
 }
