@@ -31,8 +31,9 @@ directory, and needs no rebuild, root access, or NixOS configuration change.
 If you close the ChatGPT window, ChatGPT normally stays in the background. Press
 `Ctrl+Alt+G` in the VNC session to invoke it again and reopen the hidden window.
 Press `Ctrl+Alt+C` to reopen Claude Desktop. Use `Alt+Tab` to switch between the
-two windows. If either process actually exits, the launcher restarts it. Stop
-the launcher with `Ctrl-C`.
+two windows. A visible system tray is shown at the upper-right of the VNC
+desktop, so apps that minimize to the tray remain accessible. If either process
+actually exits, the launcher restarts it. Stop the launcher with `Ctrl-C`.
 
 The server uses WayVNC authentication plus a locally generated TLS certificate.
 Because this is a public address, allow TCP/5900 only from trusted source IPs in

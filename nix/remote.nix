@@ -6,6 +6,7 @@
   labwc,
   openssl,
   wayvnc,
+  waybar,
   wlr-randr,
   chatgpt,
   claudeDesktop,
@@ -20,6 +21,27 @@
 }:
 
 let
+  waybarConfig = builtins.toFile "chatgpt-remote-waybar.json" (
+    builtins.toJSON {
+      layer = "top";
+      position = "top";
+      height = 30;
+      "modules-right" = [ "tray" ];
+      tray = {
+        icon-size = 20;
+        spacing = 8;
+      };
+    }
+  );
+  waybarStyle = builtins.toFile "chatgpt-remote-waybar.css" ''
+    window#waybar {
+      background: #1e1e2e;
+      color: #cdd6f4;
+    }
+    #tray {
+      padding: 0 10px;
+    }
+  '';
   rcXml = builtins.toFile "chatgpt-remote-rc.xml" ''
     <?xml version="1.0"?>
     <labwc_config>
@@ -53,6 +75,7 @@ writeShellApplication {
     labwc
     openssl
     wayvnc
+    waybar
     wlr-randr
   ];
   text = ''
@@ -111,10 +134,12 @@ writeShellApplication {
     chatgpt_pid=""
     claude_pid=""
     server_pid=""
+    tray_pid=""
     cleanup() {
       test -z "$server_pid" || kill "$server_pid" 2>/dev/null || true
       test -z "$chatgpt_pid" || kill "$chatgpt_pid" 2>/dev/null || true
       test -z "$claude_pid" || kill "$claude_pid" 2>/dev/null || true
+      test -z "$tray_pid" || kill "$tray_pid" 2>/dev/null || true
       kill "$compositor_pid" 2>/dev/null || true
     }
     trap cleanup EXIT INT TERM
@@ -132,6 +157,9 @@ writeShellApplication {
     fi
 
     wlr-randr --output HEADLESS-1 --custom-mode ${toString width}x${toString height}@${toString refresh}Hz
+
+    waybar --config ${waybarConfig} --style ${waybarStyle} &
+    tray_pid="$!"
 
     launch_chatgpt() {
       ${desktopCommand} \
@@ -185,7 +213,7 @@ writeShellApplication {
   '';
 
   meta = {
-    description = "Run ChatGPT/Codex and Claude Desktop in a rootless headless VNC session";
+    description = "Run ChatGPT/Codex and Claude Desktop with a system tray in a rootless headless VNC session";
     mainProgram = "chatgpt-remote";
   };
 }
