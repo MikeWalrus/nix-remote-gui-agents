@@ -1,8 +1,10 @@
 {
   lib,
+  makeFontsConf,
   writeShellApplication,
   coreutils,
   dbus,
+  gnome-keyring,
   labwc,
   openssl,
   wayvnc,
@@ -10,6 +12,7 @@
   wlr-randr,
   chatgpt,
   claudeDesktop,
+  fonts ? [ ],
   desktopCommand ? "chatgpt",
   claudeCommand ? "claude-desktop",
   listenAddress ? "127.0.0.1",
@@ -21,6 +24,9 @@
 }:
 
 let
+  fontConfig = makeFontsConf {
+    fontDirectories = fonts;
+  };
   waybarConfig = builtins.toFile "chatgpt-remote-waybar.json" (
     builtins.toJSON {
       layer = "top";
@@ -73,12 +79,13 @@ writeShellApplication {
     claudeDesktop
     coreutils
     dbus
+    gnome-keyring
     labwc
     openssl
     wayvnc
     waybar
     wlr-randr
-  ];
+  ] ++ fonts;
   text = ''
     if test -z "''${DBUS_SESSION_BUS_ADDRESS:-}"; then
       exec dbus-run-session -- "$0" "$@"
@@ -129,6 +136,12 @@ writeShellApplication {
     export WLR_RENDERER=pixman
     export WAYLAND_DISPLAY=wayland-0
     export NIXOS_OZONE_WL=1
+    export FONTCONFIG_FILE=${fontConfig}
+    # Start a Secret Service on this private D-Bus session. This gives Claude a
+    # real GNOME Keyring without depending on the host's desktop or PAM setup.
+    keyring_environment="$(gnome-keyring-daemon --start --components=secrets)"
+    eval "$keyring_environment"
+    keyring_pid="''${GNOME_KEYRING_PID:-}"
 
     labwc --config-dir "$config_dir" &
     compositor_pid="$!"
@@ -141,6 +154,7 @@ writeShellApplication {
       test -z "$chatgpt_pid" || kill "$chatgpt_pid" 2>/dev/null || true
       test -z "$claude_pid" || kill "$claude_pid" 2>/dev/null || true
       test -z "$tray_pid" || kill "$tray_pid" 2>/dev/null || true
+      test -z "$keyring_pid" || kill "$keyring_pid" 2>/dev/null || true
       kill "$compositor_pid" 2>/dev/null || true
     }
     trap cleanup EXIT INT TERM

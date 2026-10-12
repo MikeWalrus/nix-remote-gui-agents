@@ -1,4 +1,5 @@
 {
+  apple-fonts,
   codex-desktop-linux,
   claude-desktop-linux,
 }:
@@ -14,8 +15,20 @@ let
   system = pkgs.stdenv.hostPlatform.system;
   chatgpt = codex-desktop-linux.packages.${system}.codex-desktop;
   claudeDesktop = claude-desktop-linux.packages.${system}.claude-desktop;
+  remoteFonts = with apple-fonts.packages.${system}; [
+    sf-pro
+    sf-mono
+    ny
+    sf-compact
+    sf-arabic
+    sf-armenian
+    sf-georgian
+    sf-hebrew
+    pkgs.jetbrains-mono
+  ];
   start = pkgs.callPackage ./remote.nix {
     inherit chatgpt claudeDesktop;
+    fonts = remoteFonts;
     desktopCommand = "codex-desktop";
     claudeCommand = "claude-desktop";
     inherit (cfg)

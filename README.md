@@ -41,8 +41,19 @@ Because this is a public address, allow TCP/5900 only from trusted source IPs in
 your firewall/security group. The password is read from the environment and is
 never stored in the flake.
 
+The launcher also runs a private GNOME Keyring Secret Service for the VNC
+session. On Claude's first request to save a secret, enter a keyring password in
+the prompt shown in the VNC desktop. That password encrypts the session user's
+keyring on disk; it is not the VNC password and is never supplied to the
+launcher. The keyring remains unlocked only for the lifetime of the remote
+desktop session. This works without enabling GNOME Keyring or PAM integration
+in the host NixOS configuration.
+
 The desktop runtime is supplied by the pinned `codex-desktop-linux` flake input;
 update that input normally with `nix flake update codex-desktop-linux`.
+The VNC desktop also supplies Apple's SF Pro, SF Mono, New York, SF Compact, and
+localized SF families from `apple-fonts.nix`, plus JetBrains Mono. They are
+available to both desktop applications through the session's Fontconfig setup.
 
 ## Optional: start automatically at boot
 
