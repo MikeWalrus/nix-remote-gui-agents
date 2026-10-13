@@ -54,6 +54,9 @@ update that input normally with `nix flake update codex-desktop-linux`.
 The VNC desktop also supplies Apple's SF Pro, SF Mono, New York, SF Compact, and
 localized SF families from `apple-fonts.nix`, plus JetBrains Mono. They are
 available to both desktop applications through the session's Fontconfig setup.
+It includes the GTK XDG Desktop Portal backend, so Claude's **Open Folder**
+action opens a file chooser in the headless Labwc session. Its required GTK and
+desktop GSettings schemas are supplied by the launcher rather than the host.
 
 ## Optional: start automatically at boot
 

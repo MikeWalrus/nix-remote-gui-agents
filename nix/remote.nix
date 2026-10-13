@@ -4,12 +4,17 @@
   writeShellApplication,
   coreutils,
   dbus,
+  fuse3,
+  gsettings-desktop-schemas,
   gnome-keyring,
+  gtk3,
   labwc,
   openssl,
   wayvnc,
   waybar,
   wlr-randr,
+  xdg-desktop-portal,
+  xdg-desktop-portal-gtk,
   chatgpt,
   claudeDesktop,
   fonts ? [ ],
@@ -79,14 +84,24 @@ writeShellApplication {
     claudeDesktop
     coreutils
     dbus
+    fuse3
+    gsettings-desktop-schemas
     gnome-keyring
+    gtk3
     labwc
     openssl
     wayvnc
     waybar
     wlr-randr
-  ] ++ fonts;
+    xdg-desktop-portal
+    xdg-desktop-portal-gtk
+  ]
+  ++ fonts;
   text = ''
+    # D-Bus reads its service directories when it starts, so export the portal
+    # locations before creating our private session bus.
+    export XDG_DATA_DIRS="${xdg-desktop-portal}/share:${xdg-desktop-portal-gtk}/share:${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+    export XDG_CURRENT_DESKTOP=labwc
     if test -z "''${DBUS_SESSION_BUS_ADDRESS:-}"; then
       exec dbus-run-session -- "$0" "$@"
     fi
