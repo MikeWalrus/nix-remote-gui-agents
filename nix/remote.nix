@@ -4,21 +4,23 @@
   writeShellApplication,
   coreutils,
   dbus,
+  firefox,
   fuse3,
   gsettings-desktop-schemas,
   gnome-keyring,
   gtk3,
   labwc,
   openssl,
+  polkit_gnome,
   wayvnc,
   waybar,
   wlr-randr,
   xdg-desktop-portal,
   xdg-desktop-portal-gtk,
-  chatgpt,
+  codexDesktop,
   claudeDesktop,
   fonts ? [ ],
-  desktopCommand ? "chatgpt",
+  codexCommand ? "codex-desktop",
   claudeCommand ? "claude-desktop",
   listenAddress ? "127.0.0.1",
   port ? 5900,
@@ -31,6 +33,18 @@
 let
   fontConfig = makeFontsConf {
     fontDirectories = fonts;
+  };
+  firefoxLauncher = writeShellApplication {
+    name = "ai-desktop-firefox";
+    runtimeInputs = [
+      coreutils
+      firefox
+    ];
+    text = ''
+      profile_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/ai-desktop-remote/firefox"
+      mkdir -p "$profile_dir"
+      exec env MOZ_ENABLE_WAYLAND=1 firefox --no-remote --profile "$profile_dir" "$@"
+    '';
   };
   waybarConfig = builtins.toFile "chatgpt-remote-waybar.json" (
     builtins.toJSON {
@@ -60,7 +74,7 @@ let
       <keyboard>
         <keybind key="C-A-g">
           <action name="Execute">
-            <command>${desktopCommand} --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --password-store=basic</command>
+            <command>${codexCommand} --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu --password-store=basic</command>
           </action>
         </keybind>
         <keybind key="C-A-c">
@@ -68,20 +82,31 @@ let
             <command>env CLAUDE_USE_WAYLAND=1 ${claudeCommand} --ozone-platform=wayland --enable-features=UseOzonePlatform --disable-gpu</command>
           </action>
         </keybind>
+        <keybind key="C-A-f">
+          <action name="Execute">
+            <command>ai-desktop-firefox</command>
+          </action>
+        </keybind>
       </keyboard>
       <windowRules>
         <windowRule identifier="*">
           <action name="Maximize" />
+        </windowRule>
+        <windowRule title="Authenticate">
+          <action name="ToggleMaximize" />
+          <action name="Raise" />
+          <action name="Focus" />
         </windowRule>
       </windowRules>
     </labwc_config>
   '';
 in
 writeShellApplication {
-  name = "chatgpt-remote";
+  name = "ai-desktop-remote";
   runtimeInputs = [
-    chatgpt
+    codexDesktop
     claudeDesktop
+    firefoxLauncher
     coreutils
     dbus
     fuse3
@@ -90,6 +115,7 @@ writeShellApplication {
     gtk3
     labwc
     openssl
+    polkit_gnome
     wayvnc
     waybar
     wlr-randr
@@ -160,15 +186,17 @@ writeShellApplication {
 
     labwc --config-dir "$config_dir" &
     compositor_pid="$!"
-    chatgpt_pid=""
+    codex_pid=""
     claude_pid=""
     server_pid=""
     tray_pid=""
+    polkit_agent_pid=""
     cleanup() {
       test -z "$server_pid" || kill "$server_pid" 2>/dev/null || true
-      test -z "$chatgpt_pid" || kill "$chatgpt_pid" 2>/dev/null || true
+      test -z "$codex_pid" || kill "$codex_pid" 2>/dev/null || true
       test -z "$claude_pid" || kill "$claude_pid" 2>/dev/null || true
       test -z "$tray_pid" || kill "$tray_pid" 2>/dev/null || true
+      test -z "$polkit_agent_pid" || kill "$polkit_agent_pid" 2>/dev/null || true
       test -z "$keyring_pid" || kill "$keyring_pid" 2>/dev/null || true
       kill "$compositor_pid" 2>/dev/null || true
     }
@@ -188,17 +216,22 @@ writeShellApplication {
 
     wlr-randr --output HEADLESS-1 --custom-mode ${toString width}x${toString height}@${toString refresh}Hz
 
+    # Register a Polkit agent on this session bus. Authorization prompts then
+    # appear in the VNC desktop and still require the host user's password.
+    ${polkit_gnome}/libexec/polkit-gnome-authentication-agent-1 &
+    polkit_agent_pid="$!"
+
     waybar --config ${waybarConfig} --style ${waybarStyle} &
     tray_pid="$!"
 
-    launch_chatgpt() {
-      ${desktopCommand} \
+    launch_codex() {
+      ${codexCommand} \
         --ozone-platform=wayland \
         --enable-features=UseOzonePlatform \
         --disable-gpu \
         --password-store=basic \
         ${lib.escapeShellArgs extraArgs} &
-      chatgpt_pid="$!"
+      codex_pid="$!"
     }
     launch_claude() {
       CLAUDE_USE_WAYLAND=1 ${claudeCommand} \
@@ -207,24 +240,24 @@ writeShellApplication {
         --disable-gpu &
       claude_pid="$!"
     }
-    launch_chatgpt
+    launch_codex
     launch_claude
-    chatgpt_restart_count=0
+    codex_restart_count=0
     claude_restart_count=0
 
-    echo "ChatGPT is available via VNC at ${listenAddress}:${toString port}" >&2
+    echo "Codex and Claude Desktop are available via VNC at ${listenAddress}:${toString port}" >&2
     wayvnc --config="$wayvnc_config" --output=HEADLESS-1 &
     server_pid="$!"
     while kill -0 "$server_pid" 2>/dev/null; do
-      if test -n "$chatgpt_pid" && ! kill -0 "$chatgpt_pid" 2>/dev/null; then
-        chatgpt_restart_count=$((chatgpt_restart_count + 1))
-        if test "$chatgpt_restart_count" -lt 4; then
-          echo "ChatGPT exited; restarting it" >&2
+      if test -n "$codex_pid" && ! kill -0 "$codex_pid" 2>/dev/null; then
+        codex_restart_count=$((codex_restart_count + 1))
+        if test "$codex_restart_count" -lt 4; then
+          echo "Codex Desktop exited; restarting it" >&2
           sleep 1
-          launch_chatgpt
+          launch_codex
         else
-          echo "ChatGPT crashed repeatedly; leaving the VNC session running" >&2
-          chatgpt_pid=""
+          echo "Codex Desktop crashed repeatedly; leaving the VNC session running" >&2
+          codex_pid=""
         fi
       fi
       if test -n "$claude_pid" && ! kill -0 "$claude_pid" 2>/dev/null; then
@@ -243,7 +276,7 @@ writeShellApplication {
   '';
 
   meta = {
-    description = "Run ChatGPT/Codex and Claude Desktop with a system tray in a rootless headless VNC session";
-    mainProgram = "chatgpt-remote";
+    description = "Run Codex and Claude Desktop with a system tray in a rootless headless VNC session";
+    mainProgram = "ai-desktop-remote";
   };
 }

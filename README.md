@@ -1,8 +1,8 @@
-# ChatGPT Desktop, remotely on NixOS
+# Codex and Claude Desktop, remotely on NixOS
 
 This flake uses the NixOS-aware `codex-desktop-linux` and
 `claude-desktop-debian` distributions and provides a headless Wayland session
-for remote access. The launcher starts both ChatGPT/Codex and Claude Desktop,
+for remote access. The launcher starts both Codex and Claude Desktop,
 binds the configured address, and protects the VNC session with WayVNC
 authentication.
 
@@ -28,10 +28,13 @@ ssh -N -L 5900:127.0.0.1:5900 your-user@your-nixos-host
 Point a VNC viewer at `128.105.102.153:5900` and enter the same username and
 password. This runs as your current user, stores normal app state in your home
 directory, and needs no rebuild, root access, or NixOS configuration change.
-If you close the ChatGPT window, ChatGPT normally stays in the background. Press
+
+If you close the Codex window, Codex normally stays in the background. Press
 `Ctrl+Alt+G` in the VNC session to invoke it again and reopen the hidden window.
 Press `Ctrl+Alt+C` to reopen Claude Desktop. Use `Alt+Tab` to switch between the
-two windows. A light, high-contrast system tray is shown at the upper-right of
+windows. Press `Ctrl+Alt+F` to open Firefox. It uses a dedicated profile at
+`$XDG_DATA_HOME/ai-desktop-remote/firefox`, separate from the host user's normal
+Firefox profile. A light, high-contrast system tray is shown at the upper-right of
 the VNC desktop, so apps that minimize to the tray remain accessible. If either
 process actually exits, the launcher restarts it. Stop the launcher with
 `Ctrl-C`.
@@ -57,6 +60,8 @@ available to both desktop applications through the session's Fontconfig setup.
 It includes the GTK XDG Desktop Portal backend, so Claude's **Open Folder**
 action opens a file chooser in the headless Labwc session. Its required GTK and
 desktop GSettings schemas are supplied by the launcher rather than the host.
+It also runs a Polkit authentication agent in that session, so privileged
+commands invoked from the VNC desktop show a password prompt there.
 
 ## Optional: start automatically at boot
 
@@ -87,7 +92,7 @@ ssh -N -L 5900:127.0.0.1:5900 your-user@your-nixos-host
 ```
 
 Point a VNC viewer at `128.105.102.153:5900`. The first connection shows the normal
-ChatGPT login flow. App state persists in `/var/lib/chatgpt-remote`.
+Codex login flow. App state persists in `/var/lib/chatgpt-remote`.
 
 Useful checks on the host:
 
@@ -103,8 +108,8 @@ configure authenticated transport and a firewall.
 ## Desktop package only
 
 ```console
-nix build .#chatgpt-desktop
-nix run .#chatgpt-desktop
+nix build .#codex-desktop
+nix run .#codex-desktop
 ```
 
 The package is x86_64-only because this repository currently pins the official

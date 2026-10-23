@@ -13,7 +13,7 @@
 let
   cfg = config.services.chatgpt-remote;
   system = pkgs.stdenv.hostPlatform.system;
-  chatgpt = codex-desktop-linux.packages.${system}.codex-desktop;
+  codexDesktop = codex-desktop-linux.packages.${system}.codex-desktop;
   claudeDesktop = claude-desktop-linux.packages.${system}.claude-desktop;
   remoteFonts = with apple-fonts.packages.${system}; [
     sf-pro
@@ -27,9 +27,9 @@ let
     pkgs.jetbrains-mono
   ];
   start = pkgs.callPackage ./remote.nix {
-    inherit chatgpt claudeDesktop;
+    inherit codexDesktop claudeDesktop;
     fonts = remoteFonts;
-    desktopCommand = "codex-desktop";
+    codexCommand = "codex-desktop";
     claudeCommand = "claude-desktop";
     inherit (cfg)
       listenAddress
@@ -95,7 +95,7 @@ in
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Additional command-line arguments passed to ChatGPT/Codex.";
+      description = "Additional command-line arguments passed to Codex Desktop.";
     };
   };
 

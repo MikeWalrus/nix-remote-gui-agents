@@ -1,5 +1,5 @@
 {
-  description = "ChatGPT Desktop in a headless, SSH-tunnelled VNC session";
+  description = "Codex and Claude Desktop in a headless, authenticated VNC session";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -44,17 +44,20 @@
           ];
         in
         rec {
-          chatgpt-desktop = codex-desktop-linux.packages.${system}.codex-desktop;
+          codex-desktop = codex-desktop-linux.packages.${system}.codex-desktop;
           claude-desktop = claude-desktop-linux.packages.${system}.claude-desktop;
-          chatgpt-remote = pkgs.callPackage ./nix/remote.nix {
-            chatgpt = chatgpt-desktop;
+          ai-desktop-remote = pkgs.callPackage ./nix/remote.nix {
+            codexDesktop = codex-desktop;
             claudeDesktop = claude-desktop;
             fonts = remoteFonts;
-            desktopCommand = "codex-desktop";
+            codexCommand = "codex-desktop";
             claudeCommand = "claude-desktop";
             listenAddress = "128.105.102.153";
           };
-          default = chatgpt-remote;
+          # Compatibility names for existing users.
+          chatgpt-desktop = codex-desktop;
+          chatgpt-remote = ai-desktop-remote;
+          default = ai-desktop-remote;
         }
       );
 
